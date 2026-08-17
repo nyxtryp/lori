@@ -6,62 +6,62 @@ let controls = { x: 0, y: 0 };
 let isDragging = false;
 let textureLoader = new THREE.TextureLoader();
 
-// Размеры и текстуры планет с NASA
+// Размеры и текстуры планет - локальные пути
 const planetData = [
     { 
         name: 'Меркурий', 
         size: 0.38, 
         distance: 6, 
-        texture: 'https://www.solarsystemscope.com/textures/download/2k_mercury.jpg',
+        texture: 'textures/mercury.jpg',
         speed: 0.04 
     },
     { 
         name: 'Венера', 
         size: 0.95, 
         distance: 9, 
-        texture: 'https://www.solarsystemscope.com/textures/download/2k_venus_surface.jpg',
+        texture: 'textures/venus.jpg',
         speed: 0.015 
     },
     { 
         name: 'Земля', 
         size: 1, 
         distance: 0, 
-        texture: 'https://www.solarsystemscope.com/textures/download/2k_earth_daymap.jpg',
+        texture: 'textures/earth.jpg',
         speed: 0.01 
     },
     { 
         name: 'Марс', 
         size: 0.53, 
         distance: 12, 
-        texture: 'https://www.solarsystemscope.com/textures/download/2k_mars.jpg',
+        texture: 'textures/mars.jpg',
         speed: 0.008 
     },
     { 
         name: 'Юпитер', 
         size: 2.5, 
         distance: 18, 
-        texture: 'https://www.solarsystemscope.com/textures/download/2k_jupiter.jpg',
+        texture: 'textures/jupiter.jpg',
         speed: 0.002 
     },
     { 
         name: 'Сатурн', 
         size: 2.1, 
         distance: 24, 
-        texture: 'https://www.solarsystemscope.com/textures/download/2k_saturn.jpg',
+        texture: 'textures/saturn.jpg',
         speed: 0.0009 
     },
     { 
         name: 'Уран', 
         size: 1.5, 
         distance: 30, 
-        texture: 'https://www.solarsystemscope.com/textures/download/2k_uranus.jpg',
+        texture: 'textures/uranus.jpg',
         speed: 0.0004 
     },
     { 
         name: 'Нептун', 
         size: 1.46, 
         distance: 36, 
-        texture: 'https://www.solarsystemscope.com/textures/download/2k_neptune.jpg',
+        texture: 'textures/neptune.jpg',
         speed: 0.0001 
     }
 ];
@@ -154,7 +154,7 @@ function createPlanets() {
     planetData.forEach((data) => {
         const geometry = new THREE.SphereGeometry(data.size, 128, 128);
         
-        // Загружаем текстуру с NASA
+        // Загружаем локальную текстуру
         textureLoader.load(
             data.texture,
             function(texture) {
@@ -168,7 +168,6 @@ function createPlanets() {
             undefined,
             function(error) {
                 console.error('Ошибка загрузки текстуры для ' + data.name, error);
-                // Fallback на серый цвет если не загрузилась
                 const fallbackMaterial = new THREE.MeshStandardMaterial({
                     color: 0x888888,
                     metalness: 0.1,
@@ -178,7 +177,6 @@ function createPlanets() {
             }
         );
 
-        // Временный материал пока загружается текстура
         const tempMaterial = new THREE.MeshStandardMaterial({
             color: 0x444444,
             metalness: 0.1,
