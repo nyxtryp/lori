@@ -5,80 +5,90 @@ let stars;
 let controls = { x: 0, y: 0 };
 let isDragging = false;
 
-// Размеры и цвета планет (реалистичные)
+// Размеры и детали планет
 const planetData = [
     { 
         name: 'Меркурий', 
         size: 0.38, 
         distance: 6, 
-        color: 0x8c7853,
-        emissive: 0x444444,
-        speed: 0.04 
+        speed: 0.04,
+        rings: false,
+        bumpScale: 0.5
     },
     { 
         name: 'Венера', 
         size: 0.95, 
         distance: 9, 
-        color: 0xffc649,
-        emissive: 0x664400,
-        speed: 0.015 
+        speed: 0.015,
+        rings: false,
+        bumpScale: 0.3
     },
     { 
         name: 'Земля', 
         size: 1, 
         distance: 0, 
-        color: 0x2e7d32,
-        emissive: 0x1a4d1a,
-        speed: 0.01 
+        speed: 0.01,
+        rings: false,
+        bumpScale: 0.4
     },
     { 
         name: 'Марс', 
         size: 0.53, 
         distance: 12, 
-        color: 0xe27b58,
-        emissive: 0x8b4513,
-        speed: 0.008 
+        speed: 0.008,
+        rings: false,
+        bumpScale: 0.6
     },
     { 
         name: 'Юпитер', 
         size: 2.5, 
         distance: 18, 
-        color: 0xc88b3a,
-        emissive: 0x8b6914,
-        speed: 0.002 
+        speed: 0.002,
+        rings: false,
+        bumpScale: 0.4
     },
     { 
         name: 'Сатурн', 
         size: 2.1, 
         distance: 24, 
-        color: 0xfad5a5,
-        emissive: 0xb8860b,
-        speed: 0.0009 
+        speed: 0.0009,
+        rings: true,
+        bumpScale: 0.3
     },
     { 
         name: 'Уран', 
         size: 1.5, 
         distance: 30, 
-        color: 0x4fd0e7,
-        emissive: 0x1e90ff,
-        speed: 0.0004 
+        speed: 0.0004,
+        rings: false,
+        bumpScale: 0.2
     },
     { 
         name: 'Нептун', 
         size: 1.46, 
         distance: 36, 
-        color: 0x4166f5,
-        emissive: 0x0000cd,
-        speed: 0.0001 
+        speed: 0.0001,
+        rings: false,
+        bumpScale: 0.2
     }
 ];
 
-function init() {
-    // Сцена
-    scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x000000);
+// Цвета планет реалистичные
+const planetColors = {
+    'Меркурий': { main: 0x8c7853, detail: 0x5a5a5a },
+    'Венера': { main: 0xffc649, detail: 0xe6a837 },
+    'Земля': { main: 0x4a90e2, detail: 0x2e7d32 },
+    'Марс': { main: 0xe27b58, detail: 0xa04000 },
+    'Юпитер': { main: 0xc88b3a, detail: 0x8b6914 },
+    'Сатурн': { main: 0xfad5a5, detail: 0xdaa520 },
+    'Уран': { main: 0x4fd0e7, detail: 0x1e90ff },
+    'Нептун': { main: 0x4166f5, detail: 0x0000cd }
+};
 
-    // Камера
+function init() {
+    scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x000011);
+
     camera = new THREE.PerspectiveCamera(
         75,
         window.innerWidth / window.innerHeight,
@@ -87,27 +97,40 @@ function init() {
     );
     camera.position.z = 50;
 
-    // Рендерер
-    renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.shadowMap.enabled = true;
     document.getElementById('canvas-container').appendChild(renderer.domElement);
 
     // Освещение
-    const light = new THREE.PointLight(0xffffff, 2, 1000);
-    light.position.set(0, 0, 0);
-    scene.add(light);
+    const sunLight = new THREE.PointLight(0xffffff, 3, 2000);
+    sunLight.position.set(0, 0, 0);
+    sunLight.castShadow = true;
+    scene.add(sunLight);
 
-    const ambientLight = new THREE.AmbientLight(0x404040);
+    const ambientLight = new THREE.AmbientLight(0x333333);
     scene.add(ambientLight);
 
-    // Звёзды
-    createStars();
+    // Солнце в центре
+    const sunGeometry = new THREE.SphereGeometry(1.5, 32, 32);
+    const sunMaterial = new THREE.MeshBasicMaterial({ color: 0xfdb813 });
+    const sun = new THREE.Mesh(sunGeometry, sunMaterial);
+    scene.add(sun);
 
-    // Планеты
+    // Добавляем свечение к солнцу
+    const glowGeometry = new THREE.SphereGeometry(1.6, 32, 32);
+    const glowMaterial = new THREE.MeshBasicMaterial({
+        color: 0xfdb813,
+        transparent: true,
+        opacity: 0.1
+    });
+    const glow = new THREE.Mesh(glowGeometry, glowMaterial);
+    scene.add(glow);
+
+    createStars();
     createPlanets();
 
-    // События мыши и касания
     document.addEventListener('mousedown', onMouseDown);
     document.addEventListener('mousemove', onMouseMove);
     document.addEventListener('mouseup', onMouseUp);
@@ -115,25 +138,26 @@ function init() {
     document.addEventListener('touchmove', onTouchMove);
     document.addEventListener('touchend', onTouchEnd);
 
-    // Адаптивность
     window.addEventListener('resize', onWindowResize);
 
-    // Запуск анимации
     animate();
 }
 
 function createStars() {
     const starsGeometry = new THREE.BufferGeometry();
-    const starCount = 2000;
+    const starCount = 3000;
     const positions = new Float32Array(starCount * 3);
+    const sizes = new Float32Array(starCount);
 
     for (let i = 0; i < starCount * 3; i += 3) {
-        positions[i] = (Math.random() - 0.5) * 400;
-        positions[i + 1] = (Math.random() - 0.5) * 400;
-        positions[i + 2] = (Math.random() - 0.5) * 400;
+        positions[i] = (Math.random() - 0.5) * 500;
+        positions[i + 1] = (Math.random() - 0.5) * 500;
+        positions[i + 2] = (Math.random() - 0.5) * 500;
+        sizes[i / 3] = Math.random() * 0.5;
     }
 
     starsGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    starsGeometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
 
     const starsMaterial = new THREE.PointsMaterial({
         color: 0xffffff,
@@ -145,21 +169,87 @@ function createStars() {
     scene.add(stars);
 }
 
-// Функция для создания текстуры планеты (с шумом)
-function createPlanetTexture(color, pattern = 'default') {
+// Создаём Canvas текстуру с деталями
+function createDetailedTexture(planetName, mainColor, detailColor) {
     const canvas = document.createElement('canvas');
-    canvas.width = 512;
+    canvas.width = 1024;
     canvas.height = 512;
     const ctx = canvas.getContext('2d');
 
-    // Базовый цвет
-    ctx.fillStyle = '#' + color.toString(16).padStart(6, '0');
+    // Основной цвет
+    ctx.fillStyle = '#' + mainColor.toString(16).padStart(6, '0');
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Добавляем детали в зависимости от типа планеты
-    if (pattern === 'earth') {
-        // Земля - континенты и океаны
-        ctx.fillStyle = '#1a4d1a';
+    ctx.fillStyle = '#' + detailColor.toString(16).padStart(6, '0');
+
+    if (planetName === 'Земля') {
+        // Континенты Земли
+        for (let i = 0; i < 25; i++) {
+            ctx.beginPath();
+            const x = Math.random() * canvas.width;
+            const y = Math.random() * canvas.height;
+            const size = Math.random() * 80 + 30;
+            ctx.arc(x, y, size, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        // Облака
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+        for (let i = 0; i < 15; i++) {
+            ctx.fillRect(
+                Math.random() * canvas.width,
+                Math.random() * canvas.height,
+                Math.random() * 100 + 50,
+                Math.random() * 30 + 10
+            );
+        }
+    } else if (planetName === 'Юпитер') {
+        // Полосы Юпитера
+        ctx.fillStyle = 'rgba(100, 60, 0, 0.4)';
+        for (let i = 0; i < canvas.height; i += 50) {
+            ctx.fillRect(0, i, canvas.width, 25);
+        }
+        // Пятна
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+        ctx.beginPath();
+        ctx.ellipse(canvas.width * 0.3, canvas.height * 0.5, 60, 40, 0, 0, Math.PI * 2);
+        ctx.fill();
+    } else if (planetName === 'Марс') {
+        // Кратеры Марса
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+        for (let i = 0; i < 50; i++) {
+            const x = Math.random() * canvas.width;
+            const y = Math.random() * canvas.height;
+            const size = Math.random() * 40 + 10;
+            ctx.beginPath();
+            ctx.arc(x, y, size, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = 'rgba(139, 69, 19, 0.3)';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+        }
+    } else if (planetName === 'Сатурн') {
+        // Волны на Сатурне
+        ctx.fillStyle = 'rgba(139, 105, 20, 0.3)';
+        for (let i = 0; i < canvas.height; i += 40) {
+            ctx.fillRect(0, i, canvas.width, 15);
+        }
+    } else if (planetName === 'Уран') {
+        // Атмосфера Урана
+        ctx.fillStyle = 'rgba(70, 130, 180, 0.3)';
+        for (let i = 0; i < 8; i++) {
+            ctx.beginPath();
+            ctx.arc(
+                canvas.width / 2,
+                canvas.height / 2,
+                (canvas.height / 2) * (1 - i * 0.1),
+                0,
+                Math.PI * 2
+            );
+            ctx.stroke();
+        }
+    } else if (planetName === 'Нептун') {
+        // Шторм на Нептуне
+        ctx.fillStyle = 'rgba(100, 149, 237, 0.3)';
         for (let i = 0; i < 30; i++) {
             ctx.beginPath();
             ctx.arc(
@@ -171,74 +261,40 @@ function createPlanetTexture(color, pattern = 'default') {
             );
             ctx.fill();
         }
-    } else if (pattern === 'jupiter') {
-        // Юпитер - полосы
-        ctx.fillStyle = 'rgba(100, 60, 0, 0.3)';
-        for (let i = 0; i < canvas.height; i += 40) {
-            ctx.fillRect(0, i, canvas.width, 20);
-        }
-    } else if (pattern === 'mars') {
-        // Марс - кратеры
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
-        for (let i = 0; i < 40; i++) {
-            ctx.beginPath();
-            ctx.arc(
-                Math.random() * canvas.width,
-                Math.random() * canvas.height,
-                Math.random() * 30 + 5,
-                0,
-                Math.PI * 2
-            );
-            ctx.fill();
-        }
-    } else if (pattern === 'saturn') {
-        // Сатурн - волны
-        ctx.fillStyle = 'rgba(139, 105, 20, 0.3)';
-        for (let i = 0; i < canvas.height; i += 30) {
-            ctx.fillRect(0, i, canvas.width, 10);
-        }
     } else {
-        // Остальные планеты - просто шум
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+        // Для остальных - просто рельеф
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
         for (let i = 0; i < 100; i++) {
             ctx.fillRect(
                 Math.random() * canvas.width,
                 Math.random() * canvas.height,
-                Math.random() * 20,
-                Math.random() * 20
+                Math.random() * 30 + 5,
+                Math.random() * 30 + 5
             );
         }
     }
 
-    const texture = new THREE.CanvasTexture(canvas);
-    return texture;
+    return new THREE.CanvasTexture(canvas);
 }
 
 function createPlanets() {
     planetData.forEach((data) => {
-        const geometry = new THREE.SphereGeometry(data.size, 64, 64);
-        
-        // Создаём текстуру для каждой планеты
-        let pattern = 'default';
-        if (data.name === 'Земля') pattern = 'earth';
-        else if (data.name === 'Юпитер') pattern = 'jupiter';
-        else if (data.name === 'Марс') pattern = 'mars';
-        else if (data.name === 'Сатурн') pattern = 'saturn';
+        const colors = planetColors[data.name];
+        const texture = createDetailedTexture(data.name, colors.main, colors.detail);
 
-        const texture = createPlanetTexture(data.color, pattern);
-
+        const geometry = new THREE.SphereGeometry(data.size, 128, 128);
         const material = new THREE.MeshStandardMaterial({
             map: texture,
-            color: data.color,
-            emissive: data.emissive,
-            emissiveIntensity: 0.3,
-            metalness: 0.2,
-            roughness: 0.8
+            metalness: 0.3,
+            roughness: 0.7,
+            emissive: colors.detail,
+            emissiveIntensity: 0.1
         });
 
         const planet = new THREE.Mesh(geometry, material);
+        planet.castShadow = true;
+        planet.receiveShadow = true;
 
-        // Земля в центре
         if (data.distance === 0) {
             planet.position.set(0, 0, 0);
         } else {
@@ -253,16 +309,19 @@ function createPlanets() {
             size: data.size
         };
 
-        // Кольцо для Сатурна
-        if (data.name === 'Сатурн') {
-            const ringGeometry = new THREE.TorusGeometry(data.size * 1.8, data.size * 0.6, 32, 100);
+        // Кольца для Сатурна
+        if (data.rings) {
+            const ringGeometry = new THREE.TorusGeometry(data.size * 2.2, data.size * 0.8, 32, 200);
             const ringMaterial = new THREE.MeshStandardMaterial({
                 color: 0xb8860b,
-                metalness: 0.3,
-                roughness: 0.7
+                metalness: 0.4,
+                roughness: 0.6,
+                side: THREE.DoubleSide
             });
             const ring = new THREE.Mesh(ringGeometry, ringMaterial);
-            ring.rotation.x = Math.PI / 3;
+            ring.rotation.x = Math.PI / 3.5;
+            ring.castShadow = true;
+            ring.receiveShadow = true;
             planet.add(ring);
         }
 
@@ -274,7 +333,6 @@ function createPlanets() {
 function animate() {
     requestAnimationFrame(animate);
 
-    // Вращение планет вокруг Земли
     planets.forEach((planet) => {
         if (planet.userData.distance > 0) {
             planet.userData.angle += planet.userData.speed;
@@ -282,22 +340,18 @@ function animate() {
             planet.position.z = Math.sin(planet.userData.angle) * planet.userData.distance;
         }
 
-        // Вращение самих планет
-        planet.rotation.y += 0.003;
+        planet.rotation.y += 0.002;
     });
 
-    // Вращение звёзд вместе со сценой (эффект космоса)
-    stars.rotation.x += controls.y * 0.0005;
-    stars.rotation.y += controls.x * 0.0005;
+    stars.rotation.x += controls.y * 0.0001;
+    stars.rotation.y += controls.x * 0.0001;
 
-    // Вращение сцены по движениям мыши
-    scene.rotation.x += (controls.y - scene.rotation.x) * 0.05;
-    scene.rotation.y += (controls.x - scene.rotation.y) * 0.05;
+    scene.rotation.x += (controls.y - scene.rotation.x) * 0.03;
+    scene.rotation.y += (controls.x - scene.rotation.y) * 0.03;
 
     renderer.render(scene, camera);
 }
 
-// Управление мышкой
 function onMouseDown() {
     isDragging = true;
 }
@@ -313,7 +367,6 @@ function onMouseUp() {
     isDragging = false;
 }
 
-// Управление касанием
 function onTouchStart() {
     isDragging = true;
 }
@@ -330,12 +383,10 @@ function onTouchEnd() {
     isDragging = false;
 }
 
-// Адаптивность окна
 function onWindowResize() {
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
 }
 
-// Запуск
 init();
