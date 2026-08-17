@@ -4,86 +4,67 @@ let planets = [];
 let stars;
 let controls = { x: 0, y: 0 };
 let isDragging = false;
+let textureLoader = new THREE.TextureLoader();
 
-// Размеры и детали планет
+// Размеры и текстуры планет с NASA
 const planetData = [
     { 
         name: 'Меркурий', 
         size: 0.38, 
         distance: 6, 
-        speed: 0.04,
-        rings: false,
-        bumpScale: 0.5
+        texture: 'https://www.solarsystemscope.com/textures/download/2k_mercury.jpg',
+        speed: 0.04 
     },
     { 
         name: 'Венера', 
         size: 0.95, 
         distance: 9, 
-        speed: 0.015,
-        rings: false,
-        bumpScale: 0.3
+        texture: 'https://www.solarsystemscope.com/textures/download/2k_venus_surface.jpg',
+        speed: 0.015 
     },
     { 
         name: 'Земля', 
         size: 1, 
         distance: 0, 
-        speed: 0.01,
-        rings: false,
-        bumpScale: 0.4
+        texture: 'https://www.solarsystemscope.com/textures/download/2k_earth_daymap.jpg',
+        speed: 0.01 
     },
     { 
         name: 'Марс', 
         size: 0.53, 
         distance: 12, 
-        speed: 0.008,
-        rings: false,
-        bumpScale: 0.6
+        texture: 'https://www.solarsystemscope.com/textures/download/2k_mars.jpg',
+        speed: 0.008 
     },
     { 
         name: 'Юпитер', 
         size: 2.5, 
         distance: 18, 
-        speed: 0.002,
-        rings: false,
-        bumpScale: 0.4
+        texture: 'https://www.solarsystemscope.com/textures/download/2k_jupiter.jpg',
+        speed: 0.002 
     },
     { 
         name: 'Сатурн', 
         size: 2.1, 
         distance: 24, 
-        speed: 0.0009,
-        rings: true,
-        bumpScale: 0.3
+        texture: 'https://www.solarsystemscope.com/textures/download/2k_saturn.jpg',
+        speed: 0.0009 
     },
     { 
         name: 'Уран', 
         size: 1.5, 
         distance: 30, 
-        speed: 0.0004,
-        rings: false,
-        bumpScale: 0.2
+        texture: 'https://www.solarsystemscope.com/textures/download/2k_uranus.jpg',
+        speed: 0.0004 
     },
     { 
         name: 'Нептун', 
         size: 1.46, 
         distance: 36, 
-        speed: 0.0001,
-        rings: false,
-        bumpScale: 0.2
+        texture: 'https://www.solarsystemscope.com/textures/download/2k_neptune.jpg',
+        speed: 0.0001 
     }
 ];
-
-// Цвета планет реалистичные
-const planetColors = {
-    'Меркурий': { main: 0x8c7853, detail: 0x5a5a5a },
-    'Венера': { main: 0xffc649, detail: 0xe6a837 },
-    'Земля': { main: 0x4a90e2, detail: 0x2e7d32 },
-    'Марс': { main: 0xe27b58, detail: 0xa04000 },
-    'Юпитер': { main: 0xc88b3a, detail: 0x8b6914 },
-    'Сатурн': { main: 0xfad5a5, detail: 0xdaa520 },
-    'Уран': { main: 0x4fd0e7, detail: 0x1e90ff },
-    'Нептун': { main: 0x4166f5, detail: 0x0000cd }
-};
 
 function init() {
     scene = new THREE.Scene();
@@ -118,7 +99,7 @@ function init() {
     const sun = new THREE.Mesh(sunGeometry, sunMaterial);
     scene.add(sun);
 
-    // Добавляем свечение к солнцу
+    // Свечение солнца
     const glowGeometry = new THREE.SphereGeometry(1.6, 32, 32);
     const glowMaterial = new THREE.MeshBasicMaterial({
         color: 0xfdb813,
@@ -169,129 +150,42 @@ function createStars() {
     scene.add(stars);
 }
 
-// Создаём Canvas текстуру с деталями
-function createDetailedTexture(planetName, mainColor, detailColor) {
-    const canvas = document.createElement('canvas');
-    canvas.width = 1024;
-    canvas.height = 512;
-    const ctx = canvas.getContext('2d');
-
-    // Основной цвет
-    ctx.fillStyle = '#' + mainColor.toString(16).padStart(6, '0');
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    ctx.fillStyle = '#' + detailColor.toString(16).padStart(6, '0');
-
-    if (planetName === 'Земля') {
-        // Континенты Земли
-        for (let i = 0; i < 25; i++) {
-            ctx.beginPath();
-            const x = Math.random() * canvas.width;
-            const y = Math.random() * canvas.height;
-            const size = Math.random() * 80 + 30;
-            ctx.arc(x, y, size, 0, Math.PI * 2);
-            ctx.fill();
-        }
-        // Облака
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
-        for (let i = 0; i < 15; i++) {
-            ctx.fillRect(
-                Math.random() * canvas.width,
-                Math.random() * canvas.height,
-                Math.random() * 100 + 50,
-                Math.random() * 30 + 10
-            );
-        }
-    } else if (planetName === 'Юпитер') {
-        // Полосы Юпитера
-        ctx.fillStyle = 'rgba(100, 60, 0, 0.4)';
-        for (let i = 0; i < canvas.height; i += 50) {
-            ctx.fillRect(0, i, canvas.width, 25);
-        }
-        // Пятна
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
-        ctx.beginPath();
-        ctx.ellipse(canvas.width * 0.3, canvas.height * 0.5, 60, 40, 0, 0, Math.PI * 2);
-        ctx.fill();
-    } else if (planetName === 'Марс') {
-        // Кратеры Марса
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
-        for (let i = 0; i < 50; i++) {
-            const x = Math.random() * canvas.width;
-            const y = Math.random() * canvas.height;
-            const size = Math.random() * 40 + 10;
-            ctx.beginPath();
-            ctx.arc(x, y, size, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.strokeStyle = 'rgba(139, 69, 19, 0.3)';
-            ctx.lineWidth = 2;
-            ctx.stroke();
-        }
-    } else if (planetName === 'Сатурн') {
-        // Волны на Сатурне
-        ctx.fillStyle = 'rgba(139, 105, 20, 0.3)';
-        for (let i = 0; i < canvas.height; i += 40) {
-            ctx.fillRect(0, i, canvas.width, 15);
-        }
-    } else if (planetName === 'Уран') {
-        // Атмосфера Урана
-        ctx.fillStyle = 'rgba(70, 130, 180, 0.3)';
-        for (let i = 0; i < 8; i++) {
-            ctx.beginPath();
-            ctx.arc(
-                canvas.width / 2,
-                canvas.height / 2,
-                (canvas.height / 2) * (1 - i * 0.1),
-                0,
-                Math.PI * 2
-            );
-            ctx.stroke();
-        }
-    } else if (planetName === 'Нептун') {
-        // Шторм на Нептуне
-        ctx.fillStyle = 'rgba(100, 149, 237, 0.3)';
-        for (let i = 0; i < 30; i++) {
-            ctx.beginPath();
-            ctx.arc(
-                Math.random() * canvas.width,
-                Math.random() * canvas.height,
-                Math.random() * 50 + 20,
-                0,
-                Math.PI * 2
-            );
-            ctx.fill();
-        }
-    } else {
-        // Для остальных - просто рельеф
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
-        for (let i = 0; i < 100; i++) {
-            ctx.fillRect(
-                Math.random() * canvas.width,
-                Math.random() * canvas.height,
-                Math.random() * 30 + 5,
-                Math.random() * 30 + 5
-            );
-        }
-    }
-
-    return new THREE.CanvasTexture(canvas);
-}
-
 function createPlanets() {
     planetData.forEach((data) => {
-        const colors = planetColors[data.name];
-        const texture = createDetailedTexture(data.name, colors.main, colors.detail);
-
         const geometry = new THREE.SphereGeometry(data.size, 128, 128);
-        const material = new THREE.MeshStandardMaterial({
-            map: texture,
-            metalness: 0.3,
-            roughness: 0.7,
-            emissive: colors.detail,
-            emissiveIntensity: 0.1
+        
+        // Загружаем текстуру с NASA
+        textureLoader.load(
+            data.texture,
+            function(texture) {
+                const material = new THREE.MeshStandardMaterial({
+                    map: texture,
+                    metalness: 0.1,
+                    roughness: 0.8
+                });
+                planet.material = material;
+            },
+            undefined,
+            function(error) {
+                console.error('Ошибка загрузки текстуры для ' + data.name, error);
+                // Fallback на серый цвет если не загрузилась
+                const fallbackMaterial = new THREE.MeshStandardMaterial({
+                    color: 0x888888,
+                    metalness: 0.1,
+                    roughness: 0.8
+                });
+                planet.material = fallbackMaterial;
+            }
+        );
+
+        // Временный материал пока загружается текстура
+        const tempMaterial = new THREE.MeshStandardMaterial({
+            color: 0x444444,
+            metalness: 0.1,
+            roughness: 0.8
         });
 
-        const planet = new THREE.Mesh(geometry, material);
+        const planet = new THREE.Mesh(geometry, tempMaterial);
         planet.castShadow = true;
         planet.receiveShadow = true;
 
@@ -310,7 +204,7 @@ function createPlanets() {
         };
 
         // Кольца для Сатурна
-        if (data.rings) {
+        if (data.name === 'Сатурн') {
             const ringGeometry = new THREE.TorusGeometry(data.size * 2.2, data.size * 0.8, 32, 200);
             const ringMaterial = new THREE.MeshStandardMaterial({
                 color: 0xb8860b,
