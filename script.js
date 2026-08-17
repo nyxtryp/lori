@@ -4,64 +4,71 @@ let planets = [];
 let stars;
 let controls = { x: 0, y: 0 };
 let isDragging = false;
-let textureLoader = new THREE.TextureLoader();
 
-// Размеры и текстуры планет
+// Размеры и цвета планет (реалистичные)
 const planetData = [
     { 
         name: 'Меркурий', 
         size: 0.38, 
         distance: 6, 
-        texture: 'https://www.solarsystemscope.com/textures/download/2k_mercury.jpg',
+        color: 0x8c7853,
+        emissive: 0x444444,
         speed: 0.04 
     },
     { 
         name: 'Венера', 
         size: 0.95, 
         distance: 9, 
-        texture: 'https://www.solarsystemscope.com/textures/download/2k_venus_surface.jpg',
+        color: 0xffc649,
+        emissive: 0x664400,
         speed: 0.015 
     },
     { 
         name: 'Земля', 
         size: 1, 
         distance: 0, 
-        texture: 'https://www.solarsystemscope.com/textures/download/2k_earth_daymap.jpg',
+        color: 0x2e7d32,
+        emissive: 0x1a4d1a,
         speed: 0.01 
     },
     { 
         name: 'Марс', 
         size: 0.53, 
         distance: 12, 
-        texture: 'https://www.solarsystemscope.com/textures/download/2k_mars.jpg',
+        color: 0xe27b58,
+        emissive: 0x8b4513,
         speed: 0.008 
     },
     { 
         name: 'Юпитер', 
         size: 2.5, 
         distance: 18, 
-        texture: 'https://www.solarsystemscope.com/textures/download/2k_jupiter.jpg',
+        color: 0xc88b3a,
+        emissive: 0x8b6914,
         speed: 0.002 
     },
     { 
         name: 'Сатурн', 
         size: 2.1, 
         distance: 24, 
-        texture: 'https://www.solarsystemscope.com/textures/download/2k_saturn.jpg',
+        color: 0xfad5a5,
+        emissive: 0xb8860b,
         speed: 0.0009 
     },
     { 
         name: 'Уран', 
         size: 1.5, 
         distance: 30, 
-        texture: 'https://www.solarsystemscope.com/textures/download/2k_uranus.jpg',
+        color: 0x4fd0e7,
+        emissive: 0x1e90ff,
         speed: 0.0004 
     },
     { 
         name: 'Нептун', 
         size: 1.46, 
         distance: 36, 
-        texture: 'https://www.solarsystemscope.com/textures/download/2k_neptune.jpg',
+        color: 0x4166f5,
+        emissive: 0x0000cd,
         speed: 0.0001 
     }
 ];
@@ -138,38 +145,95 @@ function createStars() {
     scene.add(stars);
 }
 
+// Функция для создания текстуры планеты (с шумом)
+function createPlanetTexture(color, pattern = 'default') {
+    const canvas = document.createElement('canvas');
+    canvas.width = 512;
+    canvas.height = 512;
+    const ctx = canvas.getContext('2d');
+
+    // Базовый цвет
+    ctx.fillStyle = '#' + color.toString(16).padStart(6, '0');
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Добавляем детали в зависимости от типа планеты
+    if (pattern === 'earth') {
+        // Земля - континенты и океаны
+        ctx.fillStyle = '#1a4d1a';
+        for (let i = 0; i < 30; i++) {
+            ctx.beginPath();
+            ctx.arc(
+                Math.random() * canvas.width,
+                Math.random() * canvas.height,
+                Math.random() * 50 + 20,
+                0,
+                Math.PI * 2
+            );
+            ctx.fill();
+        }
+    } else if (pattern === 'jupiter') {
+        // Юпитер - полосы
+        ctx.fillStyle = 'rgba(100, 60, 0, 0.3)';
+        for (let i = 0; i < canvas.height; i += 40) {
+            ctx.fillRect(0, i, canvas.width, 20);
+        }
+    } else if (pattern === 'mars') {
+        // Марс - кратеры
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+        for (let i = 0; i < 40; i++) {
+            ctx.beginPath();
+            ctx.arc(
+                Math.random() * canvas.width,
+                Math.random() * canvas.height,
+                Math.random() * 30 + 5,
+                0,
+                Math.PI * 2
+            );
+            ctx.fill();
+        }
+    } else if (pattern === 'saturn') {
+        // Сатурн - волны
+        ctx.fillStyle = 'rgba(139, 105, 20, 0.3)';
+        for (let i = 0; i < canvas.height; i += 30) {
+            ctx.fillRect(0, i, canvas.width, 10);
+        }
+    } else {
+        // Остальные планеты - просто шум
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+        for (let i = 0; i < 100; i++) {
+            ctx.fillRect(
+                Math.random() * canvas.width,
+                Math.random() * canvas.height,
+                Math.random() * 20,
+                Math.random() * 20
+            );
+        }
+    }
+
+    const texture = new THREE.CanvasTexture(canvas);
+    return texture;
+}
+
 function createPlanets() {
-    planetData.forEach((data, index) => {
+    planetData.forEach((data) => {
         const geometry = new THREE.SphereGeometry(data.size, 64, 64);
         
-        // Загружаем текстуру
-        let material;
-        textureLoader.load(data.texture, 
-            function(texture) {
-                material = new THREE.MeshStandardMaterial({
-                    map: texture,
-                    metalness: 0.3,
-                    roughness: 0.7
-                });
-                planet.material = material;
-            },
-            undefined,
-            function(error) {
-                // Если текстура не загрузилась, используем цвет
-                console.log('Текстура не загрузилась, используем цвет');
-                material = new THREE.MeshStandardMaterial({
-                    color: 0x888888,
-                    metalness: 0.3,
-                    roughness: 0.7
-                });
-                planet.material = material;
-            }
-        );
+        // Создаём текстуру для каждой планеты
+        let pattern = 'default';
+        if (data.name === 'Земля') pattern = 'earth';
+        else if (data.name === 'Юпитер') pattern = 'jupiter';
+        else if (data.name === 'Марс') pattern = 'mars';
+        else if (data.name === 'Сатурн') pattern = 'saturn';
 
-        material = new THREE.MeshStandardMaterial({
-            color: 0x888888,
-            metalness: 0.3,
-            roughness: 0.7
+        const texture = createPlanetTexture(data.color, pattern);
+
+        const material = new THREE.MeshStandardMaterial({
+            map: texture,
+            color: data.color,
+            emissive: data.emissive,
+            emissiveIntensity: 0.3,
+            metalness: 0.2,
+            roughness: 0.8
         });
 
         const planet = new THREE.Mesh(geometry, material);
@@ -194,8 +258,8 @@ function createPlanets() {
             const ringGeometry = new THREE.TorusGeometry(data.size * 1.8, data.size * 0.6, 32, 100);
             const ringMaterial = new THREE.MeshStandardMaterial({
                 color: 0xb8860b,
-                metalness: 0.4,
-                roughness: 0.6
+                metalness: 0.3,
+                roughness: 0.7
             });
             const ring = new THREE.Mesh(ringGeometry, ringMaterial);
             ring.rotation.x = Math.PI / 3;
